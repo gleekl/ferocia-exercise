@@ -18,10 +18,6 @@ loadEnvFile();
 const PORT = process.env.PORT;
 const VALID_PAT = process.env.PERSONAL_ACCESS_TOKEN;
 
-console.log(PORT);
-console.log(VALID_PAT);
-
-
 const HEM_MATRIX = {
     low:    { 0: 1600, 1: 2100, 2: 2500, 3: 2800 },
     medium: { 0: 2200, 1: 2700, 2: 3100, 3: 3500 },
