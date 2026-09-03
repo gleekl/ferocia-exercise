@@ -6,6 +6,11 @@
  */
 
 const http = require("http");
+
+/**
+ * Loads .env into process.env
+ * Link: https://nodejs.org/api/process.html#processloadenvfilepath
+ */
 const { loadEnvFile } = require('node:process');
 
 loadEnvFile();
