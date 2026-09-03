@@ -6,9 +6,16 @@
  */
 
 const http = require("http");
+const { loadEnvFile } = require('node:process');
+
+loadEnvFile();
 
 const PORT = process.env.PORT;
 const VALID_PAT = process.env.PERSONAL_ACCESS_TOKEN;
+
+console.log(PORT);
+console.log(VALID_PAT);
+
 
 const HEM_MATRIX = {
     low:    { 0: 1600, 1: 2100, 2: 2500, 3: 2800 },
