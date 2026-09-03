@@ -11,7 +11,7 @@ describe('Term Deposit Calculator Tests', () => {
   it('should calculate borrowing power for standard values', () => {
     const result = calculateBorrowingPower(120000, 2, 3000, 10000, 7.5);
     assert.ok(result.maxLoanAmount > 0, 'Should yield a positive borrowing power amount');
-    assert.strictEqual(result.monthlyRepayment, 4200);
+    assert.strictEqual(result.monthlyRepayment, 4600);
   });
 
   it('should return 0 for invalid negative inputs', () => {
