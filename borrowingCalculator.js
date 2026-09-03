@@ -9,22 +9,43 @@
  * A server.js has been provided to supply these values.
  */
 
+/**
+ * Loads .env into process.env
+ * Link: https://nodejs.org/api/process.html#processloadenvfilepath
+ */
+const { loadEnvFile } = require('node:process');
+
+loadEnvFile();
+
 // Global constant for mortgage simulation
 const LOAN_TERM_MONTHS = 360; // 30 Years
 const INTEREST_RATE = 7.0; // 7.0% baseline interest rate
 const ASSESSMENT_RATE_BUFFER = 3.0; // 3.0% buffer added to interest rates
 
 // Legacy placeholder functions to replace with API calls
-function getTax(income) {
-    // REPLACE THIS
+async function getTax(income) {
+    // ! REPLACE THIS
     // Write your TAX API call code here.
-    return Math.round(income * 0.25);
+    const url = `http://localhost:3000/api/tax?income=${income}`;
+    try {
+        const res = await fetch(url, {
+            headers: {
+                Authorization: `Bearer ${process.env.PERSONAL_ACCESS_TOKEN}`
+            } 
+        });
+        
+        const data = await res.json();
+
+        return data;
+    } catch (err) {
+        throw new Error(err.message) 
+    }
 }
 
-function getHEM(income, dependents) {
-    // REPLACE THIS
+async function getHEM(income, dependents) {
+    // ! REPLACE THIS
     // Write your HEM API call code here.
-    return 2000 + (dependents * 400);
+    return 2000 + dependents * 400;
 }
 
 /**
@@ -33,6 +54,8 @@ function getHEM(income, dependents) {
 function calculateBorrowingPower(income, dependents, expenses, creditLimits, annualAssessmentRate) {
     // 1. Calculate Net Monthly Income after tax deductions
     const annualTax = getTax(income);
+    console.log(annualTax);
+    
     const netMonthlyIncome = (income - annualTax) / 12;
 
     // 2. Determine living expenses (User declared expenses vs HEM baseline, whichever is higher)
