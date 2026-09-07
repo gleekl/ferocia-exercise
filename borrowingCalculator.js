@@ -56,35 +56,18 @@ async function handleApi(endpoint, urlParams) {
 }
 
 async function getTax(income) {
-    const url = `http://localhost:3000/api/tax?income=${income}`;
-    try {
-        const res = await fetch(url, {
-            headers: {
-                Authorization: `Bearer ${PERSONAL_ACCESS_TOKEN}`
-            } 
-        });
-        const data = await res.json();
-
-        return data.tax;
-    } catch (err) {
-        throw new Error(err.message) 
-    }
+    const data = await handleApi("/api/tax", { 
+        income: income 
+    })
+    return data.tax
 }
 
 async function getHEM(income, dependents) {
-    const url = `http://localhost:3000/api/hem?income=${income}&dependents=${dependents}`;
-    try {
-        const res = await fetch(url, {
-        headers: {
-            Authorization: `Bearer ${PERSONAL_ACCESS_TOKEN}`,
-        },
-        });
-        const data = await res.json();
-
-        return data.hem;
-    } catch (err) {
-        throw new Error(err.message);
-    }
+    const data = await handleApi("/api/hem", { 
+        income: income, 
+        dependents: dependents 
+    })
+    return data.hem
 }
 
 /**
@@ -95,7 +78,7 @@ async function calculateBorrowingPower(income, dependents, expenses, creditLimit
     const annualTax = await getTax(income);
     
     const netMonthlyIncome = (income - annualTax) / 12;
-
+    
     // 2. Determine living expenses (User declared expenses vs HEM baseline, whichever is higher)
     const baselineHEM = await getHEM(income, dependents);
     const totalLivingExpenses = Math.max(expenses, baselineHEM);
