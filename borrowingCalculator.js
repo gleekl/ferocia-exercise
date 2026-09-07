@@ -17,23 +17,52 @@ const { loadEnvFile } = require('node:process');
 
 loadEnvFile();
 
+const PORT = process.env.PORT
+const API_URL = `http://localhost:${PORT}`
+const PERSONAL_ACCESS_TOKEN = process.env.PERSONAL_ACCESS_TOKEN
+
 // Global constant for mortgage simulation
 const LOAN_TERM_MONTHS = 360; // 30 Years
 const INTEREST_RATE = 7.0; // 7.0% baseline interest rate
 const ASSESSMENT_RATE_BUFFER = 3.0; // 3.0% buffer added to interest rates
 
-// Legacy placeholder functions to replace with API calls
+/**
+ * TODO (G): Further refactor getTax() & getHEM(). Currently too repetitive and too specific -> return data.tax/return data.hem.  
+ * * Current pattern: url diff endpoint/try catch fetch/return data.
+ * *                  Arguments: income/income+dependents
+ */
+async function handleApi(endpoint, urlParams) {
+    // 1. Create new URL using base API_URL and endpoint given (/api/tax)
+    // Link: https://developer.mozilla.org/en-US/docs/Web/API/URL/URL
+    const url = new URL(endpoint, API_URL);
+
+    // 2. Loop through urlParams given (income/income+dependents) to set params.
+    for (const [key, value] of Object.entries(urlParams)) {
+        url.searchParams.set(key, value)
+    }
+    
+    try {
+        const res = await fetch(url, {
+            headers: {
+                Authorization: `Bearer ${PERSONAL_ACCESS_TOKEN}`
+            } 
+        });
+        const data = await res.json();
+
+        return data;
+    } catch (err) {
+        throw new Error(err.message) 
+    }
+}
+
 async function getTax(income) {
-    // ! REPLACE THIS
-    // Write your TAX API call code here.
     const url = `http://localhost:3000/api/tax?income=${income}`;
     try {
         const res = await fetch(url, {
             headers: {
-                Authorization: `Bearer ${process.env.PERSONAL_ACCESS_TOKEN}`
+                Authorization: `Bearer ${PERSONAL_ACCESS_TOKEN}`
             } 
         });
-
         const data = await res.json();
 
         return data.tax;
@@ -43,16 +72,13 @@ async function getTax(income) {
 }
 
 async function getHEM(income, dependents) {
-    // ! REPLACE THIS
-    // Write your HEM API call code here.
     const url = `http://localhost:3000/api/hem?income=${income}&dependents=${dependents}`;
     try {
         const res = await fetch(url, {
         headers: {
-            Authorization: `Bearer ${process.env.PERSONAL_ACCESS_TOKEN}`,
+            Authorization: `Bearer ${PERSONAL_ACCESS_TOKEN}`,
         },
         });
-
         const data = await res.json();
 
         return data.hem;
