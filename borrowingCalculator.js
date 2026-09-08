@@ -115,10 +115,29 @@ function runConsoleMode() {
     console.log("===================================");
 
     rl.question("Gross Annual Income: $", (income) => {
+    
+        if (parseFloat(income) < 0 || parseFloat(income) === Infinity) {
+            throw new Error("Income must be a non-negative number.");
+        }
+        
         rl.question("Number of Dependents: ", (dependents) => {
+            
+            if (parseInt(dependents) < 0 || Number.isInteger(parseInt(dependents))) {
+                throw new Error("Dependents must be a non-negative whole number.");
+            }
+            
             rl.question("Declared Monthly Expenses: $", (expenses) => {
+
+                if (parseFloat(expenses) < 0 || parseFloat(expenses) === Infinity) {
+                    throw new Error("Expenses must be a non-negative number.");
+                }
+                
                 rl.question("Total Credit Card Limits: $", async (creditLimits) => {
                     
+                    if (parseFloat(creditLimits) < 0 || parseFloat(creditLimits) === Infinity) {
+                        throw new Error("Credit limits must be a non-negative number.");
+                    }
+
                     // Banks assess loans using base rate + buffer for safety
                     const assessmentRate = INTEREST_RATE + ASSESSMENT_RATE_BUFFER;
 

@@ -24,7 +24,6 @@ const HEM_MATRIX = {
     high:   { 0: 2600, 1: 3100, 2: 3600, 3: 4100 }
 };
 
-
 /**
  * Mock Tax Calculation
  */
@@ -47,8 +46,7 @@ function calcTax(income) {
 
     return Math.round(tax);
 }
-
-
+  
 /**
  * Mock HEM Calculation
  */
@@ -57,7 +55,6 @@ function calcHem(income, dependents) {
     const depCount = Math.min(Math.max(Math.floor(dependents), 0), 3);
     return HEM_MATRIX[incomeTier][depCount];
 }
-
 
 /**
  * Server
@@ -158,7 +155,6 @@ const server = http.createServer((req, res) => {
 
     return errorJSON(res, 404, "Not Found", "The requested endpoint does not exist.");
 });
-
 
 server.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}/`);
