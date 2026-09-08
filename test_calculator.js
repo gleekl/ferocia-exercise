@@ -6,7 +6,7 @@
 const assert = require('assert'); 
 const {calculateBorrowingPower} = require('./borrowingCalculator');
 
-describe('Term Deposit Calculator Tests', () => {
+describe('Borrowing Power Calculator Tests', () => {
 
   it('should calculate borrowing power for standard values', async () => {
     const result = await calculateBorrowingPower(120000, 2, 3000, 10000, 7.5);
