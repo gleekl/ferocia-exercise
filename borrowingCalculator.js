@@ -121,23 +121,36 @@ function runConsoleMode() {
         rl.question(prompt, (answer) => {
             
             // 2. Check if Current comparison is between integer and float.
-            if (parseFloat(answer) < 0 && parseFloat(answer)) {
-                console.log("Please give a non-negative number.");
+            switch (inputType) {
+                case "float":
+                    if (parseFloat(answer) < 0 || parseFloat(answer) === Infinity) {
+                        console.log("Please give a non-negative number.");
+        
+                        // If invalid answer, repeat the current question
+                        validateInput(prompt, inputType, callback)
+                    };
+                    break;
 
-                // If invalid answer, repeat the current question
-                validateInput(prompt, inputType, callback)
-            };
-            
-            // 2. If correct, move on to next question,
+                case "integer":
+                    if (parseInt(answer) < 0 || !Number.isInteger(parseInt(answer))) {
+                        console.log("Please give a non-negative number.");
+        
+                        // If invalid answer, repeat the current question
+                        validateInput(prompt, inputType, callback)
+                    };
+                    break;
+            }
+
+            // 3. If correct, move on to next question,
             callback(answer);
         });
     };
 
     // With validateInput()
-    validateInput("Gross Annual Income: $", (income) => {
-        validateInput("Number of Dependents: ", (dependents) => {
-            validateInput("Declared Monthly Expenses: $", (expenses) => {
-                validateInput("Total Credit Card Limits: $", async (creditLimits) => {
+    validateInput("Gross Annual Income: $", "float", (income) => {
+        validateInput("Number of Dependents: ", "integer", (dependents) => {
+            validateInput("Declared Monthly Expenses: $", "float", (expenses) => {
+                validateInput("Total Credit Card Limits: $", "float", async (creditLimits) => {
                     // Banks assess loans using base rate + buffer for safety
                     const assessmentRate = INTEREST_RATE + ASSESSMENT_RATE_BUFFER;
 
@@ -145,53 +158,6 @@ function runConsoleMode() {
                     console.log(dependents);
                     console.log(expenses);
                     console.log(creditLimits);
-
-
-                    const result = await calculateBorrowingPower(
-                        parseFloat(income),
-                        parseInt(dependents),
-                        parseFloat(expenses),
-                        parseFloat(creditLimits),
-                        assessmentRate
-                    );
-
-                    console.log("\n--- Calculation Summary ---");
-                    console.log(`Maximum Borrowing Power at ${INTEREST_RATE}%: $${result.maxLoanAmount.toLocaleString()}`);
-                    console.log(`Assumed Monthly Mortgage Repayment: $${result.monthlyRepayment.toLocaleString()} over 30 years`);
-
-                    rl.close();
-                });
-            });
-        });
-    });
-
-    // Without validateInput()
-    rl.question("Gross Annual Income: $", (income) => {
-
-        if (parseFloat(income) < 0 || parseFloat(income) === Infinity) {
-            throw new Error("Income must be a non-negative number.");
-        }
-
-        rl.question("Number of Dependents: ", (dependents) => {
-
-            if (parseInt(dependents) < 0 || !Number.isInteger(parseInt(dependents))) {
-                throw new Error("Dependents must be a non-negative whole number.");
-            }
-
-            rl.question("Declared Monthly Expenses: $", (expenses) => {
-
-                if (parseFloat(expenses) < 0 || parseFloat(expenses) === Infinity) {
-                    throw new Error("Expenses must be a non-negative number.");
-                }
-
-                rl.question("Total Credit Card Limits: $", async (creditLimits) => {
-
-                    if (parseFloat(creditLimits) < 0 || parseFloat(creditLimits) === Infinity) {
-                        throw new Error("Credit limits must be a non-negative number.");
-                    }
-
-                    // Banks assess loans using base rate + buffer for safety
-                    const assessmentRate = INTEREST_RATE + ASSESSMENT_RATE_BUFFER;
 
                     const result = await calculateBorrowingPower(
                         parseFloat(income),
