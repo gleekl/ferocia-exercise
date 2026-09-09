@@ -13,7 +13,6 @@
  * Loads .env into process.env
  * Link: https://nodejs.org/api/process.html#processloadenvfilepath
  */
-const { error } = require('node:console');
 const { loadEnvFile } = require('node:process');
 
 loadEnvFile();
@@ -27,71 +26,84 @@ const LOAN_TERM_MONTHS = 360; // 30 Years
 const INTEREST_RATE = 7.0; // 7.0% baseline interest rate
 const ASSESSMENT_RATE_BUFFER = 3.0; // 3.0% buffer added to interest rates
 
-/**
- * TODO (G): Further refactor getTax() & getHEM(). Currently too repetitive and too specific -> return data.tax/return data.hem.  
- * * Current pattern: url diff endpoint/try catch fetch/return data.
- * *                  Arguments: income/income+dependents
- */
-async function handleApi(endpoint, urlParams) {
-    // 1. Create new URL using base API_URL and endpoint given (/api/tax)
-    // Link: https://developer.mozilla.org/en-US/docs/Web/API/URL/URL
-    const url = new URL(endpoint, API_URL);
+function createConnection(url, token) {
+    /**
+     * TODO (G): Further refactor getTax() & getHEM(). Currently too repetitive and too specific -> return data.tax/return data.hem.  
+     * * Current pattern: url diff endpoint/try catch fetch/return data.
+     * *                  Arguments: income/income+dependents
+     */
+    async function handleApi(endpoint, urlParams) {
+        // 1. Create new URL using base API_URL and endpoint given (/api/tax)
+        // Link: https://developer.mozilla.org/en-US/docs/Web/API/URL/URL
+        const url = new URL(endpoint, API_URL);
 
-    // 2. Loop through urlParams given (income/income+dependents) to set params.
-    for (const [key, value] of Object.entries(urlParams)) {
-        url.searchParams.set(key, value)
-    }
-
-    try {
-        const res = await fetch(url, {
-            headers: {
-                Authorization: `Bearer ${PERSONAL_ACCESS_TOKEN}`
-            }
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-            throw new Error(`${endpoint} failed: ${res.status} ${data.error} - ${data.message || "Unknown error"}`);
+        // 2. Loop through urlParams given (income/income+dependents) to set params.
+        for (const [key, value] of Object.entries(urlParams)) {
+            url.searchParams.set(key, value)
         }
 
-        return data;
-    } catch (err) {
-        throw new Error(err.message)
+        try {
+            const res = await fetch(url, {
+                headers: {
+                    Authorization: `Bearer ${PERSONAL_ACCESS_TOKEN}`
+                }
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(`${endpoint} failed: ${res.status} ${data.error} - ${data.message || "Unknown error"}`);
+            }
+
+            return data;
+        } catch (err) {
+            throw new Error(err.message)
+        }
     }
+
+    async function getTax(income) {
+        const data = await handleApi("/api/tax", {
+            income: income
+        })
+        return data.tax
+    }
+
+    async function getHEM(income, dependents) {
+        const data = await handleApi("/api/hem", {
+            income: income,
+            dependents: dependents
+        })
+        return data.hem
+    }
+
+    return { getTax, getHEM };
 }
 
-async function getTax(income) {
-    const data = await handleApi("/api/tax", {
-        income: income
-    })
-    return data.tax
-}
-
-async function getHEM(income, dependents) {
-    const data = await handleApi("/api/hem", {
-        income: income,
-        dependents: dependents
-    })
-    return data.hem
-}
+// Initialising connection
+const apiConnection = createConnection(API_URL, PERSONAL_ACCESS_TOKEN)
 
 /**
  * Calculates the total borrowing power amount and the monthly repayment configuration
  */
 async function calculateBorrowingPower(income, dependents, expenses, creditLimits, annualAssessmentRate) {
+    // * Created a test which failed. Noticed that income and dependents had safeguards against negative numbers but not expenses and credit limits. 
+    for (const [name, value] of Object.entries({ income, dependents, expenses, creditLimits })) {
+        if (value < 0 || typeof value !== "number") {
+            throw new Error(`${name} must be a non-negative number.`)
+        }
+    }
+
     // 1. Calculate Net Monthly Income after tax deductions
-    const annualTax = await getTax(income);
+    const annualTax = await apiConnection.getTax(income);
 
     const netMonthlyIncome = (income - annualTax) / 12;
 
     // 2. Determine living expenses (User declared expenses vs HEM baseline, whichever is higher)
-    const baselineHEM = await getHEM(income, dependents);
+    const baselineHEM = await apiConnection.getHEM(income, dependents);
     const totalLivingExpenses = Math.max(expenses, baselineHEM);
 
     // 3. Calculate credit card liability (~3% of total limits)
     const creditCardLiability = creditLimits * 0.03;
-    
+
     // 4. Calculate monthly repayment capacity
     const maxMonthlyRepayment = netMonthlyIncome - totalLivingExpenses - creditCardLiability;
 
@@ -126,13 +138,13 @@ function runConsoleMode() {
 
         // 1. Ask the first question
         rl.question(prompt, (answer) => {
-            
+
             // 2. Check if Current comparison is between integer and float.
             switch (inputType) {
                 case "float":
                     if (parseFloat(answer) < 0 || Number.isNaN(parseFloat(answer)) || parseFloat(answer) === Infinity) {
                         console.log("Please give a non-negative number.");
-        
+
                         // If invalid answer, repeat the current question
                         return validateInput(prompt, inputType, callback)
                     };
@@ -141,7 +153,7 @@ function runConsoleMode() {
                 case "integer":
                     if (parseInt(answer) < 0 || !Number.isInteger(parseInt(answer)) || parseInt(answer) === Infinity) {
                         console.log("Please give a non-negative number.");
-        
+
                         // If invalid answer, repeat the current question
                         return validateInput(prompt, inputType, callback)
                     };
@@ -181,8 +193,8 @@ function runConsoleMode() {
 }
 
 if (require.main === module) {
-    // calculateBorrowingPower(10000, 2, -100, 1000, 7.5)
-        // .then((result) => console.log(result))
+    // calculateBorrowingPower(10000, -2, 100, 1000, 7.5)
+    //     .then((result) => console.log(result))
     runConsoleMode();
 }
 
