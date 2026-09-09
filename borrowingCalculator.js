@@ -13,6 +13,7 @@
  * Loads .env into process.env
  * Link: https://nodejs.org/api/process.html#processloadenvfilepath
  */
+const { error } = require('node:console');
 const { loadEnvFile } = require('node:process');
 
 loadEnvFile();
@@ -47,7 +48,12 @@ async function handleApi(endpoint, urlParams) {
                 Authorization: `Bearer ${PERSONAL_ACCESS_TOKEN}`
             }
         });
+
         const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(`${endpoint} failed: ${res.status} ${data.error} - ${data.message || "Unknown error"}`);
+        }
 
         return data;
     } catch (err) {
@@ -85,7 +91,7 @@ async function calculateBorrowingPower(income, dependents, expenses, creditLimit
 
     // 3. Calculate credit card liability (~3% of total limits)
     const creditCardLiability = creditLimits * 0.03;
-
+    
     // 4. Calculate monthly repayment capacity
     const maxMonthlyRepayment = netMonthlyIncome - totalLivingExpenses - creditCardLiability;
 
@@ -107,6 +113,7 @@ async function calculateBorrowingPower(income, dependents, expenses, creditLimit
     };
 }
 
+
 function runConsoleMode() {
     const readline = require('readline');
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -123,20 +130,20 @@ function runConsoleMode() {
             // 2. Check if Current comparison is between integer and float.
             switch (inputType) {
                 case "float":
-                    if (parseFloat(answer) < 0 || parseFloat(answer) === Infinity) {
+                    if (parseFloat(answer) < 0 || Number.isNaN(parseFloat(answer)) || parseFloat(answer) === Infinity) {
                         console.log("Please give a non-negative number.");
         
                         // If invalid answer, repeat the current question
-                        validateInput(prompt, inputType, callback)
+                        return validateInput(prompt, inputType, callback)
                     };
                     break;
 
                 case "integer":
-                    if (parseInt(answer) < 0 || !Number.isInteger(parseInt(answer))) {
+                    if (parseInt(answer) < 0 || !Number.isInteger(parseInt(answer)) || parseInt(answer) === Infinity) {
                         console.log("Please give a non-negative number.");
         
                         // If invalid answer, repeat the current question
-                        validateInput(prompt, inputType, callback)
+                        return validateInput(prompt, inputType, callback)
                     };
                     break;
             }
@@ -153,11 +160,6 @@ function runConsoleMode() {
                 validateInput("Total Credit Card Limits: $", "float", async (creditLimits) => {
                     // Banks assess loans using base rate + buffer for safety
                     const assessmentRate = INTEREST_RATE + ASSESSMENT_RATE_BUFFER;
-
-                    console.log(income);
-                    console.log(dependents);
-                    console.log(expenses);
-                    console.log(creditLimits);
 
                     const result = await calculateBorrowingPower(
                         parseFloat(income),
@@ -179,6 +181,8 @@ function runConsoleMode() {
 }
 
 if (require.main === module) {
+    // calculateBorrowingPower(10000, 2, -100, 1000, 7.5)
+        // .then((result) => console.log(result))
     runConsoleMode();
 }
 
