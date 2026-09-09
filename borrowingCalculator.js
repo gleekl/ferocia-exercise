@@ -40,32 +40,32 @@ async function handleApi(endpoint, urlParams) {
     for (const [key, value] of Object.entries(urlParams)) {
         url.searchParams.set(key, value)
     }
-    
+
     try {
         const res = await fetch(url, {
             headers: {
                 Authorization: `Bearer ${PERSONAL_ACCESS_TOKEN}`
-            } 
+            }
         });
         const data = await res.json();
 
         return data;
     } catch (err) {
-        throw new Error(err.message) 
+        throw new Error(err.message)
     }
 }
 
 async function getTax(income) {
-    const data = await handleApi("/api/tax", { 
-        income: income 
+    const data = await handleApi("/api/tax", {
+        income: income
     })
     return data.tax
 }
 
 async function getHEM(income, dependents) {
-    const data = await handleApi("/api/hem", { 
-        income: income, 
-        dependents: dependents 
+    const data = await handleApi("/api/hem", {
+        income: income,
+        dependents: dependents
     })
     return data.hem
 }
@@ -76,9 +76,9 @@ async function getHEM(income, dependents) {
 async function calculateBorrowingPower(income, dependents, expenses, creditLimits, annualAssessmentRate) {
     // 1. Calculate Net Monthly Income after tax deductions
     const annualTax = await getTax(income);
-    
+
     const netMonthlyIncome = (income - annualTax) / 12;
-    
+
     // 2. Determine living expenses (User declared expenses vs HEM baseline, whichever is higher)
     const baselineHEM = await getHEM(income, dependents);
     const totalLivingExpenses = Math.max(expenses, baselineHEM);
@@ -114,26 +114,78 @@ function runConsoleMode() {
     console.log("Mortgage Borrowing Power Calculator");
     console.log("===================================");
 
+    // Need to ensure that the inputs received are validated (e.g. income is a positive float, dependents is an integer, etc.)
+    function validateInput(prompt, inputType, callback) {
+
+        // 1. Ask the first question
+        rl.question(prompt, (answer) => {
+            
+            // 2. Check if Current comparison is between integer and float.
+            if (parseFloat(answer) < 0 && parseFloat(answer)) {
+                console.log("Please give a non-negative number.");
+
+                // If invalid answer, repeat the current question
+                validateInput(prompt, inputType, callback)
+            };
+            
+            // 2. If correct, move on to next question,
+            callback(answer);
+        });
+    };
+
+    // With validateInput()
+    validateInput("Gross Annual Income: $", (income) => {
+        validateInput("Number of Dependents: ", (dependents) => {
+            validateInput("Declared Monthly Expenses: $", (expenses) => {
+                validateInput("Total Credit Card Limits: $", async (creditLimits) => {
+                    // Banks assess loans using base rate + buffer for safety
+                    const assessmentRate = INTEREST_RATE + ASSESSMENT_RATE_BUFFER;
+
+                    console.log(income);
+                    console.log(dependents);
+                    console.log(expenses);
+                    console.log(creditLimits);
+
+
+                    const result = await calculateBorrowingPower(
+                        parseFloat(income),
+                        parseInt(dependents),
+                        parseFloat(expenses),
+                        parseFloat(creditLimits),
+                        assessmentRate
+                    );
+
+                    console.log("\n--- Calculation Summary ---");
+                    console.log(`Maximum Borrowing Power at ${INTEREST_RATE}%: $${result.maxLoanAmount.toLocaleString()}`);
+                    console.log(`Assumed Monthly Mortgage Repayment: $${result.monthlyRepayment.toLocaleString()} over 30 years`);
+
+                    rl.close();
+                });
+            });
+        });
+    });
+
+    // Without validateInput()
     rl.question("Gross Annual Income: $", (income) => {
-    
+
         if (parseFloat(income) < 0 || parseFloat(income) === Infinity) {
             throw new Error("Income must be a non-negative number.");
         }
-        
+
         rl.question("Number of Dependents: ", (dependents) => {
-            
-            if (parseInt(dependents) < 0 || Number.isInteger(parseInt(dependents))) {
+
+            if (parseInt(dependents) < 0 || !Number.isInteger(parseInt(dependents))) {
                 throw new Error("Dependents must be a non-negative whole number.");
             }
-            
+
             rl.question("Declared Monthly Expenses: $", (expenses) => {
 
                 if (parseFloat(expenses) < 0 || parseFloat(expenses) === Infinity) {
                     throw new Error("Expenses must be a non-negative number.");
                 }
-                
+
                 rl.question("Total Credit Card Limits: $", async (creditLimits) => {
-                    
+
                     if (parseFloat(creditLimits) < 0 || parseFloat(creditLimits) === Infinity) {
                         throw new Error("Credit limits must be a non-negative number.");
                     }
@@ -152,7 +204,7 @@ function runConsoleMode() {
                     console.log("\n--- Calculation Summary ---");
                     console.log(`Maximum Borrowing Power at ${INTEREST_RATE}%: $${result.maxLoanAmount.toLocaleString()}`);
                     console.log(`Assumed Monthly Mortgage Repayment: $${result.monthlyRepayment.toLocaleString()} over 30 years`);
-                    
+
                     rl.close();
                 });
             });
