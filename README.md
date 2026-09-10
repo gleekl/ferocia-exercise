@@ -23,7 +23,7 @@ Make sure you have Node.js (20.12.0 or later) installed as Node's native [`proce
    npm install
    ```
 
-1. Copy-and-paste the `.env.example` to and rename it to `.env`. 
+1. Copy-and-paste the `.env.example` to the root folder and rename it to `.env`. 
 
 1. You wil need to run the development API in it's own terminal window.
    (The server will be available at http://localhost:3000/).
