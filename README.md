@@ -23,6 +23,8 @@ Make sure you have Node.js (20.12.0 or later) installed as Node's native [`proce
    npm install
    ```
 
+1. Copy-and-paste the `.env.example` to and rename it to `.env`. 
+
 1. You wil need to run the development API in it's own terminal window.
    (The server will be available at http://localhost:3000/).
    To start the server run the following command:
@@ -33,7 +35,7 @@ Make sure you have Node.js (20.12.0 or later) installed as Node's native [`proce
 
    Note: You can stop the server with Ctrl+C
 
-1. Run the calculator with:
+1. Run the calculator in a new terminal tab/window with:
 
    ```sh
    npm start
