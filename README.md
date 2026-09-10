@@ -9,9 +9,9 @@ This is my attempt at the Borrowing Power Calculator exercise provided by the Fe
 - [About](#about)
 - [Setup](#setup)
 - [Process](#process)
-    - [Assumptions](#assumptions)
-    - [Trade-offs](#trade-offs)
-    - [Design Decisions](#design-decisions)
+  - [Assumptions](#assumptions)
+  - [Trade-offs](#trade-offs)
+  - [Design Decisions](#design-decisions)
 
 ## Setup
 
@@ -23,7 +23,7 @@ Make sure you have Node.js (20.12.0 or later) installed as Node's native [`proce
    npm install
    ```
 
-1. Copy-and-paste the `.env.example` to the root folder and rename it to `.env`. 
+1. Copy-and-paste the `.env.example` to the root folder and rename it to `.env`.
 
 1. You wil need to run the development API in it's own terminal window.
    (The server will be available at http://localhost:3000/).
@@ -49,39 +49,41 @@ Make sure you have Node.js (20.12.0 or later) installed as Node's native [`proce
 ## Process
 
 ### Assumptions
+
 - Token to be removed from the main file and represented as an environment variable prior to git intialisation.
 - Local developer setup needed, none mentioned about production setup.
-- Banking formulas like calculating `borrowing power` are correct and to remain untouched. Main refactoring involves the CLI functions. 
+- Banking formulas like calculating `borrowing power` are correct and to remain untouched. Main refactoring involves the CLI functions.
 - Negative numbers and non-numbers are invalid inputs and have to be rejected.
-    - Inputs:
-        - `income`
-        - `dependents`
-        - `expenses`
-        - `creditLimits`
+  - Inputs:
+    - `income`
+    - `dependents`
+    - `expenses`
+    - `creditLimits`
 - `income` and `dependents` are validated in the server, `expenses` and `creditLimits` are validated in the client.
 - Testing to be worked on in-parallel with the CLI functions.
 
 ### Trade-offs
 
 - Decided not to use the `dotenv` library as I usually do with my other projects as I just discovered Node's `process.loadEnvFile()`, which does the job of loading `.env` variables.
-    - Choice made to reduce reliance on 3rd party libraries.
-    - Will still need a minimum version of Node but it is the 20.12 version which I assume to be readily available.
+  - Choice made to reduce reliance on 3rd party libraries.
+  - Will still need a minimum version of Node but it is the 20.12 version which I assume to be readily available.
 - Recursive callbacks vs async/await chaining.
-    - Recursive callbacks looked less readable than an async/await chain of rl.questions() to collect the inputs in variables then putting those inputs in `calculateBorrowingPower()`. 
-    - I did not manage to get an async/await version working due to an undetermined bug so I chose to commit to the recursive version. 
+  - Recursive callbacks looked less readable than an async/await chain of rl.questions() to collect the inputs in variables then putting those inputs in `calculateBorrowingPower()`.
+  - I did not manage to get an async/await version working due to an undetermined bug so I chose to commit to the recursive version.
 - Redundant client-side guard clause [more details here](#guard-clause).
-    - `income` and `dependents` already had server-side guard clauses but I chose to loop the conditional statement to validate if the remaining inputs, `expenses`and `creditLimits` were also valid as it allowed future parameter additions if needed. 
-    - Wanted to keep it consistent in how they fail too with the same conditions. 
-    - Manage to keep the server-side untouched and still cover the client-side checks.
+  - `income` and `dependents` already had server-side guard clauses but I chose to loop the conditional statement to validate if the remaining inputs, `expenses`and `creditLimits` were also valid as it allowed future parameter additions if needed.
+  - Wanted to keep it consistent in how they fail too with the same conditions.
+  - Manage to keep the server-side untouched and still cover the client-side checks.
 
 ### Design Decisions
 
 <a name="load-env-file"></a>
+
 - Decided not to use the `dotenv` library as I usually do with my other projects as I just discovered Node's `process.loadEnvFile()`, which does the job of loading `.env` variables.
 - Factory/closure:
   - Chose to refactor a few top-level functions into a factory function `createConnection()` instead of a `class` mainly because I am a bit more familiar with factory functions.
   - Private states (`url` and the given `token`) can stay within the function.
-    ```js
+    ``js
     function createConnection(url, token) {
       async function handleApi(endpoint, urlParams) {
         // 1. Create new URL using base API_URL and endpoint given (/api/tax)
@@ -123,21 +125,24 @@ Make sure you have Node.js (20.12.0 or later) installed as Node's native [`proce
       }
       return { getTax, getHEM };
     }
-    ```
-<a name="guard-clause"></a>
+    ``
+    <a name="guard-clause"></a>
 - Guard clause:
   - Aim: Solve test failure (negative number has been inputted)
-  - Issue: Test kept failing due to the lack of a guard clause for the
+  - Issue: Test kept failing due to the lack of a guard clause for the 3rd and 4th arguments, `expense` and `creditLimits`.
+    - First two arguments, `income` and `dependents`, already had server-side guard clauses but not `expense` and `creditLimits`.
+
     ```js
     it("should reject when a negative number has been inputted", async () => {
-        await assert.rejects(calculateBorrowingPower(-80000, 2, 2000, 1000, 7.5));
-        await assert.rejects(calculateBorrowingPower(80000, -2, 2000, 1000, 7.5));
-        await assert.rejects(calculateBorrowingPower(80000, 2, -2000, 1000, 7.5)); // <-- Failure point as the 2 above were fine. First 2 tests already had guard clauses against negative numbers in the server-side which were the first 2 (income, dependents) arguments. 3rd (expenses) and 4th (creditLimits) arguments did not have a guard clause.
-        await assert.rejects(calculateBorrowingPower(80000, 2, 2000, -1000, 7.5)); // <-- Second failure point. Same as above.
+      await assert.rejects(calculateBorrowingPower(-80000, 2, 2000, 1000, 7.5));
+      await assert.rejects(calculateBorrowingPower(80000, -2, 2000, 1000, 7.5));
+      await assert.rejects(calculateBorrowingPower(80000, 2, -2000, 1000, 7.5)); // <-- Failure point as the 2 above were fine. First 2 tests already had guard clauses against negative numbers in the server-side which were the first 2 (income, dependents) arguments. 3rd (expenses) and 4th (creditLimits) arguments did not have a guard clause.
+      await assert.rejects(calculateBorrowingPower(80000, 2, 2000, -1000, 7.5)); // <-- Second failure point. Same as above.
     });
     ```
 
   - Attempted Solution:
+    - Loop through every CLI input and check if the inputs are valid.
     ```js
     for (const [name, value] of Object.entries({
       income,
@@ -154,7 +159,8 @@ Make sure you have Node.js (20.12.0 or later) installed as Node's native [`proce
 - Recursive Function refactor:
   - Aim: Create a catch for any inputs that are `less than 0` or `not numbers`
   - Attempted Solution:
-
+    - Create recursive function that loops back to itself if the inputs are invalid.
+    - Initially thought of a `boolean` to check if it is supposed to be an `integer` or `float` but decided to allow more flexibility and go for a `switch` statement with conditionals within. 
     ```js
     function validateInput(prompt, inputType, callback) {
       // 1. Ask the first question
