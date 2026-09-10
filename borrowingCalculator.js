@@ -93,14 +93,14 @@ async function calculateBorrowingPower(income, dependents, expenses, creditLimit
     }
 
     // 1. Calculate Net Monthly Income after tax deductions
-    const annualTax = await apiConnection.getTax(income);
+    // Non-sequential approach with Promise.all() instead of 
+    const [ annualTax, baselineHEM ] = await Promise.all([apiConnection.getTax(income), apiConnection.getHEM(income, dependents)]);
 
     const netMonthlyIncome = (income - annualTax) / 12;
 
     // 2. Determine living expenses (User declared expenses vs HEM baseline, whichever is higher)
-    const baselineHEM = await apiConnection.getHEM(income, dependents);
     const totalLivingExpenses = Math.max(expenses, baselineHEM);
-
+    
     // 3. Calculate credit card liability (~3% of total limits)
     const creditCardLiability = creditLimits * 0.03;
 
