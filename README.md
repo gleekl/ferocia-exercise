@@ -83,7 +83,7 @@ Make sure you have Node.js (20.12.0 or later) installed as Node's native [`proce
 - Factory/closure:
   - Chose to refactor a few top-level functions into a factory function `createConnection()` instead of a `class` mainly because I am a bit more familiar with factory functions.
   - Private states (`url` and the given `token`) can stay within the function.
-    ``js
+    ```js
     function createConnection(url, token) {
       async function handleApi(endpoint, urlParams) {
         // 1. Create new URL using base API_URL and endpoint given (/api/tax)
@@ -125,7 +125,7 @@ Make sure you have Node.js (20.12.0 or later) installed as Node's native [`proce
       }
       return { getTax, getHEM };
     }
-    ``
+    ```
     <a name="guard-clause"></a>
 - Guard clause:
   - Aim: Solve test failure (negative number has been inputted)
